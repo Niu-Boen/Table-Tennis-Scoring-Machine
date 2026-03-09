@@ -92,7 +92,7 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
                           children: [
                             Expanded(
                               child: DropdownButtonFormField<Team>(
-                                value: _selectedTeam1,
+                                initialValue: _selectedTeam1,
                                 decoration: const InputDecoration(
                                   labelText: 'Team 1',
                                   border: OutlineInputBorder(),
@@ -126,7 +126,7 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
                             const SizedBox(width: 16),
                             Expanded(
                               child: DropdownButtonFormField<Team>(
-                                value: _selectedTeam2,
+                                initialValue: _selectedTeam2,
                                 decoration: const InputDecoration(
                                   labelText: 'Team 2',
                                   border: OutlineInputBorder(),
