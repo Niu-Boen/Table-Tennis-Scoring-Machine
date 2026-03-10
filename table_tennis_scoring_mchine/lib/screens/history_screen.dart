@@ -61,7 +61,7 @@ class HistoryScreen extends StatelessWidget {
                 onDismissed: (direction) {
                   provider.deleteMatch(match.id);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Match deleted')),
+                    const SnackBar(content: Text('Match deleted')),
                   );
                 },
                 child: Card(
