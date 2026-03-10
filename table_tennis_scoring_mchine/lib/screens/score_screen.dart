@@ -38,11 +38,7 @@ class _ScoreScreenState extends State<ScoreScreen> {
               onPressed: () {
                 widget.match.setFirstServer(1);
                 Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('${widget.match.team1.name} serves first'),
-                  ),
-                );
+                _showSuccessSnackbar('${widget.match.team1.name} serves first');
               },
               child: Text(widget.match.team1.name),
             ),
@@ -50,11 +46,7 @@ class _ScoreScreenState extends State<ScoreScreen> {
               onPressed: () {
                 widget.match.setFirstServer(2);
                 Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('${widget.match.team2.name} serves first'),
-                  ),
-                );
+                _showSuccessSnackbar('${widget.match.team2.name} serves first');
               },
               child: Text(widget.match.team2.name),
             ),
@@ -64,58 +56,56 @@ class _ScoreScreenState extends State<ScoreScreen> {
     );
   }
 
-  void _showPreviousGameDialog(BuildContext context, Match match) {
-    final prevGame = match.previousGame;
-    if (prevGame == null) return;
-    
+  // 显示半透明绿色浮窗
+  void _showSuccessSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green.withValues(alpha: 0.8),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 1),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(10),
+      ),
+    );
+  }
+
+  // 显示所有已结束局数的对话框
+  void _showAllFinishedGamesDialog(BuildContext context, Match match) {
+    final finishedGames = match.games.asMap().entries.where((entry) => entry.value.isCompleted).toList();
+    if (finishedGames.isEmpty) return;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Game ${match.currentGameNumber} Results'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Column(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: match.team1.color,
-                      child: Text(
-                        match.team1.name[0],
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '${prevGame.team1Score}',
-                      style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-                    ),
-                  ],
+        title: const Text('Finished Games'),
+        content: Container(
+          width: double.maxFinite,
+          constraints: const BoxConstraints(maxHeight: 400),
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: finishedGames.length,
+            itemBuilder: (context, index) {
+              final entry = finishedGames[index];
+              final gameNum = entry.key + 1;
+              final game = entry.value;
+              return Card(
+                margin: const EdgeInsets.symmetric(vertical: 4),
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: game.winner?.color ?? Colors.grey,
+                    child: Text('$gameNum'),
+                  ),
+                  title: Text('Game $gameNum'),
+                  subtitle: Text('Winner: ${game.winner?.name ?? 'Unknown'}'),
+                  trailing: Text(
+                    '${game.team1Score} : ${game.team2Score}',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
                 ),
-                const Text('vs', style: TextStyle(fontSize: 20)),
-                Column(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: match.team2.color,
-                      child: Text(
-                        match.team2.name[0],
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '${prevGame.team2Score}',
-                      style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text('Winner: ${prevGame.winner?.name ?? 'Unknown'}'),
-          ],
+              );
+            },
+          ),
         ),
         actions: [
           TextButton(
@@ -159,7 +149,7 @@ class _ScoreScreenState extends State<ScoreScreen> {
             ),
             body: OrientationBuilder(
               builder: (context, orientation) {
-                double scoreFontSize = orientation == Orientation.portrait ? 120 : 80;
+                double scoreFontSize = orientation == Orientation.portrait ? 120 : 100;
                 return Column(
                   children: [
                     // 大比分显示
@@ -245,14 +235,14 @@ class _ScoreScreenState extends State<ScoreScreen> {
                                 'Game ${match.currentGameNumber + 1}/${match.totalGames}',
                                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                               ),
-                              // 查看上一局按钮（如果存在上一局）
-                              if (match.currentGameNumber > 0)
+                              // 查看历史按钮（如果存在已结束局）
+                              if (match.games.any((g) => g.isCompleted))
                                 IconButton(
                                   icon: const Icon(Icons.history, size: 20),
                                   onPressed: () {
-                                    _showPreviousGameDialog(context, match);
+                                    _showAllFinishedGamesDialog(context, match);
                                   },
-                                  tooltip: 'View previous game',
+                                  tooltip: 'View finished games',
                                 ),
                             ],
                           ),
@@ -287,49 +277,70 @@ class _ScoreScreenState extends State<ScoreScreen> {
                         ],
                       ),
                     ),
-                    // 当前局比分
+                    // 当前局比分 - 可点击加分
                     Expanded(
                       flex: 3,
                       child: Row(
                         children: [
+                          // 队伍1得分区域
                           Expanded(
-                            child: Container(
-                              color: match.currentServer == 1 && match.firstServerDetermined
-                                  ? match.team1.color.withValues(alpha: 0.2)
-                                  : match.team1.color.withValues(alpha: 0.1),
-                              child: Center(
-                                child: FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  child: Text(
-                                    '${match.currentGame.team1Score}',
-                                    style: TextStyle(
-                                      fontSize: scoreFontSize,
-                                      fontWeight: FontWeight.bold,
-                                      color: match.team1.color,
+                            child: GestureDetector(
+                              onTap: () {
+                                if (!match.isCompleted &&
+                                    match.firstServerDetermined &&
+                                    !match.currentGame.isCompleted) {
+                                  match.addPoint(1);
+                                }
+                              },
+                              child: Container(
+                                color: match.currentServer == 1 && match.firstServerDetermined
+                                    ? match.team1.color.withValues(alpha: 0.2)
+                                    : match.team1.color.withValues(alpha: 0.1),
+                                child: Center(
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      '${match.currentGame.team1Score}',
+                                      style: TextStyle(
+                                        fontSize: scoreFontSize,
+                                        fontWeight: FontWeight.bold,
+                                        color: match.team1.color,
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
                           ),
+                          // 分隔线
                           Container(
                             width: 2,
                             color: Colors.grey[300],
                           ),
+                          // 队伍2得分区域
                           Expanded(
-                            child: Container(
-                              color: match.currentServer == 2 && match.firstServerDetermined
-                                  ? match.team2.color.withValues(alpha: 0.2)
-                                  : match.team2.color.withValues(alpha: 0.1),
-                              child: Center(
-                                child: FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  child: Text(
-                                    '${match.currentGame.team2Score}',
-                                    style: TextStyle(
-                                      fontSize: scoreFontSize,
-                                      fontWeight: FontWeight.bold,
-                                      color: match.team2.color,
+                            child: GestureDetector(
+                              onTap: () {
+                                if (!match.isCompleted &&
+                                    match.firstServerDetermined &&
+                                    !match.currentGame.isCompleted) {
+                                  match.addPoint(2);
+                                }
+                              },
+                              child: Container(
+                                color: match.currentServer == 2 && match.firstServerDetermined
+                                    ? match.team2.color.withValues(alpha: 0.2)
+                                    : match.team2.color.withValues(alpha: 0.1),
+                                child: Center(
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      '${match.currentGame.team2Score}',
+                                      style: TextStyle(
+                                        fontSize: scoreFontSize,
+                                        fontWeight: FontWeight.bold,
+                                        color: match.team2.color,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -352,56 +363,6 @@ class _ScoreScreenState extends State<ScoreScreen> {
                             Text(
                               'Interval - Switch sides',
                               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.orange),
-                            ),
-                          ],
-                        ),
-                      ),
-                    // 加分按钮
-                    if (!match.isCompleted &&
-                        match.firstServerDetermined &&
-                        !match.currentGame.isCompleted)
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: () => match.addPoint(1),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: match.team1.color,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 24),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                ),
-                                child: Column(
-                                  children: [
-                                    const Text('+1', style: TextStyle(fontSize: 32)),
-                                    Text(match.team1.name),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: () => match.addPoint(2),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: match.team2.color,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 24),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                ),
-                                child: Column(
-                                  children: [
-                                    const Text('+1', style: TextStyle(fontSize: 32)),
-                                    Text(match.team2.name),
-                                  ],
-                                ),
-                              ),
                             ),
                           ],
                         ),
@@ -550,9 +511,8 @@ class _ScoreScreenState extends State<ScoreScreen> {
                 TextButton(
                   onPressed: () {
                     Navigator.of(context).pop();
-                    // 应用修正后的分数
                     match.correctGameScore(tempScore1, tempScore2);
-                    match.confirmGameEnd(); // 确认进入下一局
+                    match.confirmGameEnd();
                   },
                   child: const Text('Confirm'),
                 ),
