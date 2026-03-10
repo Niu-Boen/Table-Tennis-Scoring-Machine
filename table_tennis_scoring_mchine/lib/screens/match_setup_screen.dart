@@ -13,17 +13,58 @@ class MatchSetupScreen extends StatefulWidget {
 
 class _MatchSetupScreenState extends State<MatchSetupScreen> {
   final _formKey = GlobalKey<FormState>();
-  int _totalGames = 3;
-  int _pointsPerGame = 11;
+  late int _totalGames;
+  late int _pointsPerGame;
+  int? _deuceWinScore;
   Team? _selectedTeam1;
   Team? _selectedTeam2;
   final TextEditingController _newTeamController = TextEditingController();
+  final TextEditingController _deuceScoreController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // 从Provider加载默认设置
+    final provider = Provider.of<MatchProvider>(context, listen: false);
+    _totalGames = provider.defaultTotalGames;
+    _pointsPerGame = provider.defaultPointsPerGame;
+    _deuceWinScore = provider.defaultDeuceWinScore;
+    
+    // 设置加时赛分数控制器
+    if (_deuceWinScore != null) {
+      _deuceScoreController.text = _deuceWinScore.toString();
+    }
+  }
+
+  // 保存当前设置为默认值
+  Future<void> _saveAsDefault() async {
+    final provider = Provider.of<MatchProvider>(context, listen: false);
+    await provider.saveDefaultSettings(
+      totalGames: _totalGames,
+      pointsPerGame: _pointsPerGame,
+      deuceWinScore: _deuceWinScore,
+    );
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Settings saved as default')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('New Match'),
+        actions: [
+          // 保存为默认设置按钮
+          IconButton(
+            icon: const Icon(Icons.save),
+            onPressed: _saveAsDefault,
+            tooltip: 'Save as default',
+          ),
+        ],
       ),
       body: Consumer<MatchProvider>(
         builder: (context, provider, child) {
@@ -75,6 +116,21 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
                             ),
                           ],
                         ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _deuceScoreController,
+                          decoration: const InputDecoration(
+                            labelText: 'Deuce Win Score (optional)',
+                            hintText: 'e.g., 15',
+                            border: OutlineInputBorder(),
+                          ),
+                          keyboardType: TextInputType.number,
+                          onChanged: (value) {
+                            setState(() {
+                              _deuceWinScore = value.isEmpty ? null : int.tryParse(value);
+                            });
+                          },
+                        ),
                       ],
                     ),
                   ),
@@ -92,7 +148,7 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
                           children: [
                             Expanded(
                               child: DropdownButtonFormField<Team>(
-                                initialValue: _selectedTeam1,
+                                value: _selectedTeam1,
                                 decoration: const InputDecoration(
                                   labelText: 'Team 1',
                                   border: OutlineInputBorder(),
@@ -126,7 +182,7 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
                             const SizedBox(width: 16),
                             Expanded(
                               child: DropdownButtonFormField<Team>(
-                                initialValue: _selectedTeam2,
+                                value: _selectedTeam2,
                                 decoration: const InputDecoration(
                                   labelText: 'Team 2',
                                   border: OutlineInputBorder(),
@@ -197,6 +253,9 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
                   onPressed: () {
                     if (_selectedTeam1 != null && _selectedTeam2 != null) {
                       if (_selectedTeam1!.id != _selectedTeam2!.id) {
+                        // 自动保存为默认设置
+                        _saveAsDefault();
+                        
                         final match = Match(
                           id: DateTime.now().toString(),
                           startTime: DateTime.now(),
@@ -204,6 +263,7 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
                           team2: _selectedTeam2!,
                           totalGames: _totalGames,
                           pointsPerGame: _pointsPerGame,
+                          deuceWinScore: _deuceWinScore,
                         );
 
                         provider.addMatch(match);

@@ -31,3 +31,4 @@ class Game {
         pointHistory: List<Map<String, dynamic>>.from(json['pointHistory']),
       );
 }
+ 
