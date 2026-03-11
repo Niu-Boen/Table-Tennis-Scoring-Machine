@@ -38,7 +38,7 @@ class _ScoreScreenState extends State<ScoreScreen> {
               onPressed: () {
                 widget.match.setFirstServer(1);
                 Navigator.of(context).pop();
-                _showSuccessSnackbar('${widget.match.team1.name} serves first');
+                _showTopSnackbar('${widget.match.team1.name} serves first');
               },
               child: Text(widget.match.team1.name),
             ),
@@ -46,7 +46,7 @@ class _ScoreScreenState extends State<ScoreScreen> {
               onPressed: () {
                 widget.match.setFirstServer(2);
                 Navigator.of(context).pop();
-                _showSuccessSnackbar('${widget.match.team2.name} serves first');
+                _showTopSnackbar('${widget.match.team1.name} serves first');
               },
               child: Text(widget.match.team2.name),
             ),
@@ -57,22 +57,32 @@ class _ScoreScreenState extends State<ScoreScreen> {
   }
 
   // 显示半透明绿色浮窗
-  void _showSuccessSnackbar(String message) {
+  // 显示顶部提示浮窗
+  void _showTopSnackbar(String message,
+      {Color backgroundColor = Colors.green}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.green.withValues(alpha: 0.8),
+        backgroundColor: backgroundColor.withValues(alpha: 0.9),
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 1),
+        margin: EdgeInsets.only(
+          top: MediaQuery.of(context).padding.top + 10,
+          left: 10,
+          right: 10,
+        ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        margin: const EdgeInsets.all(10),
       ),
     );
   }
 
   // 显示所有已结束局数的对话框
   void _showAllFinishedGamesDialog(BuildContext context, Match match) {
-    final finishedGames = match.games.asMap().entries.where((entry) => entry.value.isCompleted).toList();
+    final finishedGames = match.games
+        .asMap()
+        .entries
+        .where((entry) => entry.value.isCompleted)
+        .toList();
     if (finishedGames.isEmpty) return;
 
     showDialog(
@@ -100,7 +110,8 @@ class _ScoreScreenState extends State<ScoreScreen> {
                   subtitle: Text('Winner: ${game.winner?.name ?? 'Unknown'}'),
                   trailing: Text(
                     '${game.team1Score} : ${game.team2Score}',
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
               );
@@ -141,7 +152,8 @@ class _ScoreScreenState extends State<ScoreScreen> {
                     child: Center(
                       child: Text(
                         'Champion: ${match.matchWinner?.name}',
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -149,7 +161,8 @@ class _ScoreScreenState extends State<ScoreScreen> {
             ),
             body: OrientationBuilder(
               builder: (context, orientation) {
-                double scoreFontSize = orientation == Orientation.portrait ? 120 : 100;
+                double scoreFontSize =
+                    orientation == Orientation.portrait ? 120 : 100;
                 return Column(
                   children: [
                     // 大比分显示
@@ -162,12 +175,17 @@ class _ScoreScreenState extends State<ScoreScreen> {
                           Column(
                             children: [
                               CircleAvatar(
-                                radius: orientation == Orientation.portrait ? 30 : 20,
+                                radius: orientation == Orientation.portrait
+                                    ? 30
+                                    : 20,
                                 backgroundColor: match.team1.color,
                                 child: Text(
                                   match.team1.name[0],
                                   style: TextStyle(
-                                    fontSize: orientation == Orientation.portrait ? 24 : 16,
+                                    fontSize:
+                                        orientation == Orientation.portrait
+                                            ? 24
+                                            : 16,
                                     color: Colors.white,
                                   ),
                                 ),
@@ -175,13 +193,15 @@ class _ScoreScreenState extends State<ScoreScreen> {
                               const SizedBox(height: 8),
                               Text(
                                 match.team1.name,
-                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.bold),
                               ),
                             ],
                           ),
                           Container(
                             margin: const EdgeInsets.symmetric(horizontal: 32),
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 24, vertical: 12),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(16),
@@ -196,18 +216,24 @@ class _ScoreScreenState extends State<ScoreScreen> {
                             ),
                             child: Text(
                               '${match.team1GameWins.length} : ${match.team2GameWins.length}',
-                              style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                  fontSize: 36, fontWeight: FontWeight.bold),
                             ),
                           ),
                           Column(
                             children: [
                               CircleAvatar(
-                                radius: orientation == Orientation.portrait ? 30 : 20,
+                                radius: orientation == Orientation.portrait
+                                    ? 30
+                                    : 20,
                                 backgroundColor: match.team2.color,
                                 child: Text(
                                   match.team2.name[0],
                                   style: TextStyle(
-                                    fontSize: orientation == Orientation.portrait ? 24 : 16,
+                                    fontSize:
+                                        orientation == Orientation.portrait
+                                            ? 24
+                                            : 16,
                                     color: Colors.white,
                                   ),
                                 ),
@@ -215,7 +241,8 @@ class _ScoreScreenState extends State<ScoreScreen> {
                               const SizedBox(height: 8),
                               Text(
                                 match.team2.name,
-                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.bold),
                               ),
                             ],
                           ),
@@ -233,7 +260,8 @@ class _ScoreScreenState extends State<ScoreScreen> {
                             children: [
                               Text(
                                 'Game ${match.currentGameNumber + 1}/${match.totalGames}',
-                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.bold),
                               ),
                               // 查看历史按钮（如果存在已结束局）
                               if (match.games.any((g) => g.isCompleted))
@@ -248,7 +276,8 @@ class _ScoreScreenState extends State<ScoreScreen> {
                           ),
                           if (!match.isCompleted && match.firstServerDetermined)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 4),
                               decoration: BoxDecoration(
                                 color: match.currentServer == 1
                                     ? match.team1.color.withValues(alpha: 0.2)
@@ -257,20 +286,25 @@ class _ScoreScreenState extends State<ScoreScreen> {
                               ),
                               child: Text(
                                 'Serve: ${match.currentServer == 1 ? match.team1.name : match.team2.name}',
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold),
                               ),
                             ),
-                          if (!match.firstServerDetermined && !match.isCompleted)
+                          if (!match.firstServerDetermined &&
+                              !match.isCompleted)
                             const Text('Choose first server...'),
                           if (match.isTieBreak)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 4),
                               decoration: BoxDecoration(
                                 color: Colors.orange[100],
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
-                                match.deuceWinScore != null ? 'Deuce (${match.deuceWinScore})' : 'Deuce',
+                                match.deuceWinScore != null
+                                    ? 'Deuce (${match.deuceWinScore})'
+                                    : 'Deuce',
                                 style: const TextStyle(color: Colors.orange),
                               ),
                             ),
@@ -293,7 +327,8 @@ class _ScoreScreenState extends State<ScoreScreen> {
                                 }
                               },
                               child: Container(
-                                color: match.currentServer == 1 && match.firstServerDetermined
+                                color: match.currentServer == 1 &&
+                                        match.firstServerDetermined
                                     ? match.team1.color.withValues(alpha: 0.2)
                                     : match.team1.color.withValues(alpha: 0.1),
                                 child: Center(
@@ -328,7 +363,8 @@ class _ScoreScreenState extends State<ScoreScreen> {
                                 }
                               },
                               child: Container(
-                                color: match.currentServer == 2 && match.firstServerDetermined
+                                color: match.currentServer == 2 &&
+                                        match.firstServerDetermined
                                     ? match.team2.color.withValues(alpha: 0.2)
                                     : match.team2.color.withValues(alpha: 0.1),
                                 child: Center(
@@ -362,7 +398,10 @@ class _ScoreScreenState extends State<ScoreScreen> {
                             SizedBox(width: 8),
                             Text(
                               'Interval - Switch sides',
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.orange),
+                              style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.orange),
                             ),
                           ],
                         ),
@@ -373,24 +412,28 @@ class _ScoreScreenState extends State<ScoreScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          if (!match.isCompleted && match.currentGame.pointHistory.isNotEmpty)
+                          if (!match.isCompleted &&
+                              match.currentGame.pointHistory.isNotEmpty)
                             OutlinedButton.icon(
                               onPressed: () => match.undoLastPoint(),
                               icon: const Icon(Icons.undo),
                               label: const Text('Undo'),
                               style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 24, vertical: 12),
                               ),
                             ),
                           if (match.isCompleted)
                             ElevatedButton.icon(
                               onPressed: () {
-                                Navigator.popUntil(context, (route) => route.isFirst);
+                                Navigator.popUntil(
+                                    context, (route) => route.isFirst);
                               },
                               icon: const Icon(Icons.home),
                               label: const Text('Home'),
                               style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 24, vertical: 12),
                               ),
                             ),
                         ],
