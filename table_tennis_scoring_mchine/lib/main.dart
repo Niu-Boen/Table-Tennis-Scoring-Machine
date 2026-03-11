@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'models/match.dart';
-import 'screens/home_screen.dart';
+import 'screens/home_screen.dart'; // 确保这个路径正确
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final matchProvider = MatchProvider();
-  await matchProvider.loadMatches(); // 加载保存的比赛数据
-  await matchProvider.loadDefaultSettings(); // 加载默认设置
-  
+  await matchProvider.loadMatches();
+  await matchProvider.loadDefaultSettings();
+
   runApp(MyApp(matchProvider: matchProvider));
 }
 
 class MyApp extends StatelessWidget {
   final MatchProvider matchProvider;
-  
+
   const MyApp({super.key, required this.matchProvider});
 
   @override

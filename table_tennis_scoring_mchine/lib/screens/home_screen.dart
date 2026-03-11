@@ -1,269 +1,127 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/match.dart';
-import '../models/team.dart';
+import 'match_setup_screen.dart';
 import 'score_screen.dart';
+import 'history_screen.dart';
 
-class MatchSetupScreen extends StatefulWidget {
-  const MatchSetupScreen({super.key});
-
-  @override
-  State<MatchSetupScreen> createState() => _MatchSetupScreenState();
-}
-
-class _MatchSetupScreenState extends State<MatchSetupScreen> {
-  final _formKey = GlobalKey<FormState>();
-  int _totalGames = 3;
-  int _pointsPerGame = 11;
-  int? _deuceWinScore; // 新增
-  Team? _selectedTeam1;
-  Team? _selectedTeam2;
-  final TextEditingController _newTeamController = TextEditingController();
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('New Match'),
-      ),
-      body: Consumer<MatchProvider>(
-        builder: (context, provider, child) {
-          return Form(
-            key: _formKey,
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Match Settings',
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextFormField(
-                                initialValue: _totalGames.toString(),
-                                decoration: const InputDecoration(
-                                  labelText: 'Total Games',
-                                  border: OutlineInputBorder(),
-                                ),
-                                keyboardType: TextInputType.number,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _totalGames = int.tryParse(value) ?? 3;
-                                  });
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: TextFormField(
-                                initialValue: _pointsPerGame.toString(),
-                                decoration: const InputDecoration(
-                                  labelText: 'Points per Game',
-                                  border: OutlineInputBorder(),
-                                ),
-                                keyboardType: TextInputType.number,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _pointsPerGame = int.tryParse(value) ?? 11;
-                                  });
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        // 新增加时赛决胜分数输入
-                        TextFormField(
-                          initialValue: _deuceWinScore?.toString() ?? '',
-                          decoration: const InputDecoration(
-                            labelText: 'Deuce Win Score (optional)',
-                            hintText: 'e.g., 15',
-                            border: OutlineInputBorder(),
-                          ),
-                          keyboardType: TextInputType.number,
-                          onChanged: (value) {
-                            setState(() {
-                              _deuceWinScore =
-                                  value.isEmpty ? null : int.tryParse(value);
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Select Teams',
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: DropdownButtonFormField<Team>(
-                                initialValue: _selectedTeam1,
-                                decoration: const InputDecoration(
-                                  labelText: 'Team 1',
-                                  border: OutlineInputBorder(),
-                                ),
-                                items: provider.teams.map((team) {
-                                  return DropdownMenuItem(
-                                    value: team,
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          width: 20,
-                                          height: 20,
-                                          decoration: BoxDecoration(
-                                            color: team.color,
-                                            shape: BoxShape.circle,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(team.name),
-                                      ],
-                                    ),
-                                  );
-                                }).toList(),
-                                onChanged: (team) {
-                                  setState(() {
-                                    _selectedTeam1 = team;
-                                  });
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: DropdownButtonFormField<Team>(
-                                initialValue: _selectedTeam2,
-                                decoration: const InputDecoration(
-                                  labelText: 'Team 2',
-                                  border: OutlineInputBorder(),
-                                ),
-                                items: provider.teams.map((team) {
-                                  return DropdownMenuItem(
-                                    value: team,
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          width: 20,
-                                          height: 20,
-                                          decoration: BoxDecoration(
-                                            color: team.color,
-                                            shape: BoxShape.circle,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(team.name),
-                                      ],
-                                    ),
-                                  );
-                                }).toList(),
-                                onChanged: (team) {
-                                  setState(() {
-                                    _selectedTeam2 = team;
-                                  });
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        const Text('Or add new team:'),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextFormField(
-                                controller: _newTeamController,
-                                decoration: const InputDecoration(
-                                  hintText: 'Team name',
-                                  border: OutlineInputBorder(),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            ElevatedButton(
-                              onPressed: () {
-                                if (_newTeamController.text.isNotEmpty) {
-                                  provider.addTeam(Team(
-                                    id: DateTime.now().toString(),
-                                    name: _newTeamController.text,
-                                    color: Colors.primaries[
-                                        provider.teams.length %
-                                            Colors.primaries.length],
-                                  ));
-                                  _newTeamController.clear();
-                                }
-                              },
-                              child: const Text('Add'),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: () {
-                    if (_selectedTeam1 != null && _selectedTeam2 != null) {
-                      if (_selectedTeam1!.id != _selectedTeam2!.id) {
-                        final match = Match(
-                          id: DateTime.now().toString(),
-                          startTime: DateTime.now(),
-                          team1: _selectedTeam1!,
-                          team2: _selectedTeam2!,
-                          totalGames: _totalGames,
-                          pointsPerGame: _pointsPerGame,
-                          deuceWinScore: _deuceWinScore, // 传入
-                        );
-
-                        provider.addMatch(match);
-
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ScoreScreen(match: match),
-                          ),
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content:
-                                  Text('Please select two different teams')),
-                        );
-                      }
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Please select both teams')),
-                      );
-                    }
-                  },
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                    child: Text('Start Match', style: TextStyle(fontSize: 18)),
-                  ),
-                ),
-              ],
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Table Tennis Scorekeeper'),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Active'),
+              Tab(text: 'Completed'),
+            ],
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.history),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const HistoryScreen()),
+                );
+              },
             ),
-          );
-        },
+          ],
+        ),
+        body: Consumer<MatchProvider>(
+          builder: (context, provider, child) {
+            return TabBarView(
+              children: [
+                // Active Matches Tab
+                _buildMatchList(provider.activeMatches, isActive: true),
+                // Completed Matches Tab
+                _buildMatchList(provider.completedMatches, isActive: false),
+              ],
+            );
+          },
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const MatchSetupScreen()),
+            );
+          },
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }
+
+  Widget _buildMatchList(List<Match> matches, {required bool isActive}) {
+    if (matches.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.sports_tennis, size: 64, color: Colors.grey),
+            const SizedBox(height: 16),
+            Text(
+              isActive ? 'No active matches' : 'No completed matches',
+              style: const TextStyle(fontSize: 18, color: Colors.grey),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      itemCount: matches.length,
+      itemBuilder: (context, index) {
+        final match = matches[index];
+        final avatarColor = match.isCompleted
+            ? (match.matchWinner?.color ?? Colors.grey)
+            : match.team1.color;
+
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: avatarColor,
+              child: Text(match.team1.name[0]),
+            ),
+            title: Text('${match.team1.name} vs ${match.team2.name}'),
+            subtitle: match.isCompleted
+                ? Text(
+                    'Champion: ${match.matchWinner?.name} · ${match.startTime.toLocal().toString().split('.')[0]}',
+                  )
+                : Text(
+                    'Game ${match.currentGameNumber + 1}/${match.totalGames} · ${match.pointsPerGame} pts',
+                  ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '${match.team1GameWins.length} : ${match.team2GameWins.length}',
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.arrow_forward_ios),
+              ],
+            ),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ScoreScreen(match: match),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
 }
- 
