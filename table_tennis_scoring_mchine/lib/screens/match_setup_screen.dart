@@ -29,11 +29,34 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
     _totalGames = provider.defaultTotalGames;
     _pointsPerGame = provider.defaultPointsPerGame;
     _deuceWinScore = provider.defaultDeuceWinScore;
-    
+
     // 设置加时赛分数控制器
     if (_deuceWinScore != null) {
       _deuceScoreController.text = _deuceWinScore.toString();
     }
+  }
+
+  // 显示顶部提示浮窗
+  void _showTopSnackbar(String message,
+      {Color backgroundColor = Colors.green}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: const TextStyle(fontWeight: FontWeight.w500),
+        ),
+        backgroundColor: backgroundColor.withValues(alpha: 0.9),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 1),
+        margin: EdgeInsets.only(
+          top: MediaQuery.of(context).padding.top + 10,
+          left: 10,
+          right: 10,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
   }
 
   // 保存当前设置为默认值
@@ -44,11 +67,9 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
       pointsPerGame: _pointsPerGame,
       deuceWinScore: _deuceWinScore,
     );
-    
+
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Settings saved as default')),
-      );
+      _showTopSnackbar('Settings saved as default');
     }
   }
 
@@ -79,7 +100,9 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Match Settings', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        const Text('Match Settings',
+                            style: TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 16),
                         Row(
                           children: [
@@ -127,7 +150,8 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
                           keyboardType: TextInputType.number,
                           onChanged: (value) {
                             setState(() {
-                              _deuceWinScore = value.isEmpty ? null : int.tryParse(value);
+                              _deuceWinScore =
+                                  value.isEmpty ? null : int.tryParse(value);
                             });
                           },
                         ),
@@ -142,13 +166,15 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Select Teams', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        const Text('Select Teams',
+                            style: TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 16),
                         Row(
                           children: [
                             Expanded(
                               child: DropdownButtonFormField<Team>(
-                                initialValue: _selectedTeam1,
+                                value: _selectedTeam1,
                                 decoration: const InputDecoration(
                                   labelText: 'Team 1',
                                   border: OutlineInputBorder(),
@@ -182,7 +208,7 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
                             const SizedBox(width: 16),
                             Expanded(
                               child: DropdownButtonFormField<Team>(
-                                initialValue: _selectedTeam2,
+                                value: _selectedTeam2,
                                 decoration: const InputDecoration(
                                   labelText: 'Team 2',
                                   border: OutlineInputBorder(),
@@ -235,9 +261,12 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
                                   provider.addTeam(Team(
                                     id: DateTime.now().toString(),
                                     name: _newTeamController.text,
-                                    color: Colors.primaries[provider.teams.length % Colors.primaries.length],
+                                    color: Colors.primaries[
+                                        provider.teams.length %
+                                            Colors.primaries.length],
                                   ));
                                   _newTeamController.clear();
+                                  _showTopSnackbar('Team added successfully');
                                 }
                               },
                               child: const Text('Add'),
@@ -255,7 +284,7 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
                       if (_selectedTeam1!.id != _selectedTeam2!.id) {
                         // 自动保存为默认设置
                         _saveAsDefault();
-                        
+
                         final match = Match(
                           id: DateTime.now().toString(),
                           startTime: DateTime.now(),
@@ -275,13 +304,15 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
                           ),
                         );
                       } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Please select two different teams')),
+                        _showTopSnackbar(
+                          'Please select two different teams',
+                          backgroundColor: Colors.red,
                         );
                       }
                     } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Please select both teams')),
+                      _showTopSnackbar(
+                        'Please select both teams',
+                        backgroundColor: Colors.red,
                       );
                     }
                   },
