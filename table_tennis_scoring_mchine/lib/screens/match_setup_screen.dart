@@ -16,29 +16,37 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
   late int _totalGames;
   late int _pointsPerGame;
   int? _deuceWinScore;
+  late bool _isDoubles;
   Team? _selectedTeam1;
   Team? _selectedTeam2;
   final TextEditingController _newTeamController = TextEditingController();
   final TextEditingController _deuceScoreController = TextEditingController();
 
+  // 球员名字控制器（双打用）
+  final List<TextEditingController> _team1PlayerControllers = [
+    TextEditingController(),
+    TextEditingController(),
+  ];
+  final List<TextEditingController> _team2PlayerControllers = [
+    TextEditingController(),
+    TextEditingController(),
+  ];
+
   @override
   void initState() {
     super.initState();
-    // 从Provider加载默认设置
     final provider = Provider.of<MatchProvider>(context, listen: false);
     _totalGames = provider.defaultTotalGames;
     _pointsPerGame = provider.defaultPointsPerGame;
     _deuceWinScore = provider.defaultDeuceWinScore;
+    _isDoubles = provider.defaultIsDoubles;
 
-    // 设置加时赛分数控制器
     if (_deuceWinScore != null) {
       _deuceScoreController.text = _deuceWinScore.toString();
     }
   }
 
-  // 显示顶部提示浮窗
-  void _showTopSnackbar(String message,
-      {Color backgroundColor = Colors.green}) {
+  void _showTopSnackbar(String message, {Color backgroundColor = Colors.green}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -59,18 +67,24 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
     );
   }
 
-  // 保存当前设置为默认值
   Future<void> _saveAsDefault() async {
     final provider = Provider.of<MatchProvider>(context, listen: false);
     await provider.saveDefaultSettings(
       totalGames: _totalGames,
       pointsPerGame: _pointsPerGame,
       deuceWinScore: _deuceWinScore,
+      isDoubles: _isDoubles,
     );
-
     if (mounted) {
       _showTopSnackbar('Settings saved as default');
     }
+  }
+
+  // 验证并获取球员名字列表
+  List<String> _getPlayerNames(List<TextEditingController> controllers) {
+    return controllers
+        .map((c) => c.text.trim().isEmpty ? 'Player' : c.text.trim())
+        .toList();
   }
 
   @override
@@ -79,7 +93,6 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
       appBar: AppBar(
         title: const Text('New Match'),
         actions: [
-          // 保存为默认设置按钮
           IconButton(
             icon: const Icon(Icons.save),
             onPressed: _saveAsDefault,
@@ -100,9 +113,37 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Match Settings',
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold)),
+                        const Text('Match Settings', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 16),
+                        // 单打/双打选择
+                        Row(
+                          children: [
+                            Expanded(
+                              child: RadioListTile<bool>(
+                                title: const Text('Singles'),
+                                value: false,
+                                groupValue: _isDoubles,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _isDoubles = value ?? false;
+                                  });
+                                },
+                              ),
+                            ),
+                            Expanded(
+                              child: RadioListTile<bool>(
+                                title: const Text('Doubles'),
+                                value: true,
+                                groupValue: _isDoubles,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _isDoubles = value ?? false;
+                                  });
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
                         const SizedBox(height: 16),
                         Row(
                           children: [
@@ -150,8 +191,7 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
                           keyboardType: TextInputType.number,
                           onChanged: (value) {
                             setState(() {
-                              _deuceWinScore =
-                                  value.isEmpty ? null : int.tryParse(value);
+                              _deuceWinScore = value.isEmpty ? null : int.tryParse(value);
                             });
                           },
                         ),
@@ -166,10 +206,9 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Select Teams',
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold)),
+                        const Text('Select Teams', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 16),
+                        // 队伍选择
                         Row(
                           children: [
                             Expanded(
@@ -201,6 +240,12 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
                                 onChanged: (team) {
                                   setState(() {
                                     _selectedTeam1 = team;
+                                    // 重置球员名字输入
+                                    if (team != null) {
+                                      for (int i = 0; i < _team1PlayerControllers.length; i++) {
+                                        _team1PlayerControllers[i].text = '';
+                                      }
+                                    }
                                   });
                                 },
                               ),
@@ -235,12 +280,50 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
                                 onChanged: (team) {
                                   setState(() {
                                     _selectedTeam2 = team;
+                                    for (int i = 0; i < _team2PlayerControllers.length; i++) {
+                                      _team2PlayerControllers[i].text = '';
+                                    }
                                   });
                                 },
                               ),
                             ),
                           ],
                         ),
+                        const SizedBox(height: 16),
+                        // 球员名字输入（根据单双打显示不同数量）
+                        if (_selectedTeam1 != null) ...[
+                          const Text('Team 1 Players:'),
+                          const SizedBox(height: 8),
+                          for (int i = 0; i < (_isDoubles ? 2 : 1); i++) ...[
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 8.0),
+                              child: TextFormField(
+                                controller: _team1PlayerControllers[i],
+                                decoration: InputDecoration(
+                                  labelText: 'Player ${i + 1} name',
+                                  border: const OutlineInputBorder(),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                        if (_selectedTeam2 != null) ...[
+                          const SizedBox(height: 16),
+                          const Text('Team 2 Players:'),
+                          const SizedBox(height: 8),
+                          for (int i = 0; i < (_isDoubles ? 2 : 1); i++) ...[
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 8.0),
+                              child: TextFormField(
+                                controller: _team2PlayerControllers[i],
+                                decoration: InputDecoration(
+                                  labelText: 'Player ${i + 1} name',
+                                  border: const OutlineInputBorder(),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                         const SizedBox(height: 16),
                         const Text('Or add new team:'),
                         Row(
@@ -261,9 +344,8 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
                                   provider.addTeam(Team(
                                     id: DateTime.now().toString(),
                                     name: _newTeamController.text,
-                                    color: Colors.primaries[
-                                        provider.teams.length %
-                                            Colors.primaries.length],
+                                    color: Colors.primaries[provider.teams.length % Colors.primaries.length],
+                                    playerNames: _isDoubles ? ['Player1', 'Player2'] : ['Player1'],
                                   ));
                                   _newTeamController.clear();
                                   _showTopSnackbar('Team added successfully');
@@ -280,41 +362,51 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
                 const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: () {
-                    if (_selectedTeam1 != null && _selectedTeam2 != null) {
-                      if (_selectedTeam1!.id != _selectedTeam2!.id) {
-                        // 自动保存为默认设置
-                        _saveAsDefault();
-
-                        final match = Match(
-                          id: DateTime.now().toString(),
-                          startTime: DateTime.now(),
-                          team1: _selectedTeam1!,
-                          team2: _selectedTeam2!,
-                          totalGames: _totalGames,
-                          pointsPerGame: _pointsPerGame,
-                          deuceWinScore: _deuceWinScore,
-                        );
-
-                        provider.addMatch(match);
-
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ScoreScreen(match: match),
-                          ),
-                        );
-                      } else {
-                        _showTopSnackbar(
-                          'Please select two different teams',
-                          backgroundColor: Colors.red,
-                        );
-                      }
-                    } else {
-                      _showTopSnackbar(
-                        'Please select both teams',
-                        backgroundColor: Colors.red,
-                      );
+                    if (_selectedTeam1 == null || _selectedTeam2 == null) {
+                      _showTopSnackbar('Please select both teams', backgroundColor: Colors.red);
+                      return;
                     }
+                    if (_selectedTeam1!.id == _selectedTeam2!.id) {
+                      _showTopSnackbar('Please select two different teams', backgroundColor: Colors.red);
+                      return;
+                    }
+
+                    // 构建球队实例（复制队伍，并设置球员名字）
+                    final team1 = Team(
+                      id: _selectedTeam1!.id,
+                      name: _selectedTeam1!.name,
+                      color: _selectedTeam1!.color,
+                      playerNames: _getPlayerNames(_team1PlayerControllers),
+                    );
+                    final team2 = Team(
+                      id: _selectedTeam2!.id,
+                      name: _selectedTeam2!.name,
+                      color: _selectedTeam2!.color,
+                      playerNames: _getPlayerNames(_team2PlayerControllers),
+                    );
+
+                    // 自动保存为默认设置
+                    _saveAsDefault();
+
+                    final match = Match(
+                      id: DateTime.now().toString(),
+                      startTime: DateTime.now(),
+                      team1: team1,
+                      team2: team2,
+                      isDoubles: _isDoubles,
+                      totalGames: _totalGames,
+                      pointsPerGame: _pointsPerGame,
+                      deuceWinScore: _deuceWinScore,
+                    );
+
+                    provider.addMatch(match);
+
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ScoreScreen(match: match),
+                      ),
+                    );
                   },
                   child: const Padding(
                     padding: EdgeInsets.symmetric(vertical: 16),
